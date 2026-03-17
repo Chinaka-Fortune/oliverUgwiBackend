@@ -26,10 +26,16 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     app.url_map.strict_slashes = False
     
-    # Configure Upload Folder
+    # Configure Upload Folder (Handle Vercel read-only filesystem)
     app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
+    try:
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
+    except OSError:
+        # Vercel functions are read-only except for /tmp.
+        # We catch the error so the app can still boot. 
+        # For production file uploads, an external service (like S3/Supabase Storage) is required.
+        pass
 
     # CORS Configuration - Pull from ENV or use defaults
     allowed_origins = os.environ.get('ALLOWED_ORIGINS', "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5175").split(',')
