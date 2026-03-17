@@ -56,6 +56,13 @@ def create_app(config_class=Config):
     app.register_blueprint(customer_bp, url_prefix='/api/customer', strict_slashes=False)
     app.register_blueprint(billing_bp, url_prefix='/api/billing', strict_slashes=False)
 
+    @app.route('/')
+    def index():
+        return jsonify({
+            "status": "online",
+            "message": "Oliver Ugwi API is running."
+        }), 200
+
     @app.route('/health')
     def health_check():
         return jsonify({"status": "healthy", "service": "OLIVER-UGWI API"})
