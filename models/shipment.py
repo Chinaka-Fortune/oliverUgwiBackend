@@ -27,7 +27,7 @@ class Shipment(db.Model):
     
     status = db.Column(db.String(50), default='Pending') # Pending, In Transit, Cleared, Delivered
     type = db.Column(db.String(50), nullable=False) # Maritime, Air Cargo, etc.
-    estimated_deliveryDate = db.Column(db.DateTime, nullable=True)
+    estimated_deliveryDate = db.Column('estimated_delivery_date', db.DateTime, nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
