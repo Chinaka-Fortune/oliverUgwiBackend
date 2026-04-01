@@ -6,10 +6,12 @@ from models.hero_video import HeroVideo
 from models.user import User
 from models import db
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 
 video_bp = Blueprint('videos', __name__)
 
-ALLOWED_EXTENSIONS = {'mp4', 'webm', 'ogg'}
+ALLOWED_EXTENSIONS = {'mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'}
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -38,20 +40,27 @@ def upload_video():
         return jsonify({"msg": "No selected file"}), 400
     
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        unique_filename = f"hero_{uuid.uuid4().hex}_{filename}"
-        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename))
-        
-        file_url = f"/uploads/{unique_filename}"
-        
-        new_video = HeroVideo(
-            filename=unique_filename,
-            url=file_url
-        )
-        db.session.add(new_video)
-        db.session.commit()
-        
-        return jsonify({"msg": "Video uploaded successfully", "video": new_video.to_dict()}), 201
+        try:
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file, 
+                resource_type="video", 
+                folder="hero_videos"
+            )
+            
+            file_url = upload_result.get("secure_url")
+            public_id = upload_result.get("public_id") # We'll save this in the filename column to easily delete later
+            
+            new_video = HeroVideo(
+                filename=public_id,
+                url=file_url
+            )
+            db.session.add(new_video)
+            db.session.commit()
+            
+            return jsonify({"msg": "Video uploaded successfully", "video": new_video.to_dict()}), 201
+        except Exception as e:
+            return jsonify({"msg": f"Cloudinary upload failed: {str(e)}"}), 500
     
     return jsonify({"msg": "File type not allowed. Please upload mp4, webm, or ogg."}), 400
 
@@ -68,13 +77,12 @@ def delete_video(id):
     if not video:
         return jsonify({"msg": "Video not found"}), 404
 
-    # Delete file from filesystem
+    # Delete file from Cloudinary 
     try:
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], video.filename)
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        # For Cloudinary, the filename column stores the public_id
+        cloudinary.uploader.destroy(video.filename, resource_type="video")
     except Exception as e:
-        print(f"Error deleting file: {e}")
+        print(f"Error deleting file from Cloudinary: {e}")
 
     db.session.delete(video)
     db.session.commit()

@@ -5,6 +5,8 @@ from werkzeug.utils import secure_filename
 from models import db
 from models.testimonial import Testimonial
 from models.user import User
+import cloudinary
+import cloudinary.uploader
 
 testimonial_bp = Blueprint('testimonial_routes', __name__)
 
@@ -50,15 +52,16 @@ def create_testimonial():
     if 'image' in request.files:
         file = request.files['image']
         if file and file.filename != '' and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            # Create unique filename
-            from datetime import datetime
-            import uuid
-            unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}_{filename}"
-            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-            file.save(file_path)
-            # Full path construction for frontend (assumes typical setup)
-            image_url = f"/uploads/{unique_filename}"
+            try:
+                # Upload to Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    file,
+                    folder="testimonials"
+                )
+                image_url = upload_result.get("secure_url")
+            except Exception as e:
+                print(f"Cloudinary upload error: {e}")
+                # Fallback or error handled below
 
     try:
         new_testimonial = Testimonial(
@@ -101,20 +104,24 @@ def update_testimonial(id):
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                from datetime import datetime
-                import uuid
-                unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}_{filename}"
-                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-                file.save(file_path)
-                
-                # Optional: Delete old image here if necessary
-                if testimonial.image_url:
-                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], testimonial.image_url.split('/')[-1])
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-                        
-                testimonial.image_url = f"/uploads/{unique_filename}"
+                try:
+                    # Optional: Delete old image from Cloudinary if it was a Cloudinary URL
+                    if testimonial.image_url and 'cloudinary' in testimonial.image_url:
+                        try:
+                            # Extract public_id from URL
+                            public_id = testimonial.image_url.split('/')[-1].split('.')[0]
+                            cloudinary.uploader.destroy(f"testimonials/{public_id}")
+                        except:
+                            pass
+
+                    # Upload to Cloudinary
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder="testimonials"
+                    )
+                    testimonial.image_url = upload_result.get("secure_url")
+                except Exception as e:
+                    print(f"Cloudinary upload error: {e}")
         if 'name' in data:
             testimonial.name = data['name']
         if 'role' in data:
@@ -140,11 +147,13 @@ def delete_testimonial(id):
     testimonial = Testimonial.query.get_or_404(id)
 
     try:
-        # Delete associated image file if it exists
-        if testimonial.image_url:
-            old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], testimonial.image_url.split('/')[-1])
-            if os.path.exists(old_path):
-                os.remove(old_path)
+        # Delete associated image file from Cloudinary if it exists
+        if testimonial.image_url and 'cloudinary' in testimonial.image_url:
+            try:
+                public_id = testimonial.image_url.split('/')[-1].split('.')[0]
+                cloudinary.uploader.destroy(f"testimonials/{public_id}")
+            except:
+                pass
                 
         db.session.delete(testimonial)
         db.session.commit()

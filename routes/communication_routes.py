@@ -30,6 +30,35 @@ def handle_contact():
         )
         db.session.add(new_contact)
         db.session.commit()
+
+        # Automated Email Notifications
+        admin_email = os.environ.get('MAIL_DEFAULT_SENDER', 'info@oliverugwi.com')
+        
+        # 1. Notify Admin
+        admin_subject = f"New Contact Inquiry: {new_contact.firstName} {new_contact.lastName}"
+        admin_body = f"""
+        <h3>New Inquiry Received</h3>
+        <p><strong>Name:</strong> {new_contact.firstName} {new_contact.lastName}</p>
+        <p><strong>Email:</strong> {new_contact.email}</p>
+        <p><strong>Phone:</strong> {new_contact.phone}</p>
+        <p><strong>Service:</strong> {new_contact.service}</p>
+        <p><strong>Message:</strong></p>
+        <p>{new_contact.message}</p>
+        """
+        send_email(admin_email, admin_subject, admin_body, is_html=True)
+
+        # 2. Acknowledge Customer
+        customer_subject = "Thank you for contacting OLIVER-UGWI"
+        customer_body = f"""
+        <h3>Hello {new_contact.firstName},</h3>
+        <p>Thank you for reaching out to OLIVER-UGWI GLOBAL SERVICES LTD. We have received your inquiry regarding <strong>{new_contact.service}</strong>.</p>
+        <p>Our team will review your message and get back to you shortly.</p>
+        <br>
+        <p>Best regards,</p>
+        <p><strong>OLIVER-UGWI Team</strong></p>
+        """
+        send_email(new_contact.email, customer_subject, customer_body, is_html=True)
+
         return jsonify({"message": "Inquiry received successfully", "contact": new_contact.to_dict()}), 201
     except Exception as e:
         db.session.rollback()
@@ -183,6 +212,35 @@ def handle_quote_request():
         
         db.session.add(new_quote)
         db.session.commit()
+
+        # Automated Email Notifications
+        admin_email = os.environ.get('MAIL_DEFAULT_SENDER', 'info@oliverugwi.com')
+        
+        # 1. Notify Admin
+        admin_subject = f"New Quote Request: {new_quote.name}"
+        admin_body = f"""
+        <h3>New Quote Request Received</h3>
+        <p><strong>Name:</strong> {new_quote.name}</p>
+        <p><strong>Email:</strong> {new_quote.email}</p>
+        <p><strong>Service:</strong> {new_quote.service}</p>
+        <p><strong>Origin:</strong> {new_quote.origin}</p>
+        <p><strong>Destination:</strong> {new_quote.destination}</p>
+        <p><strong>Description:</strong> {new_quote.description}</p>
+        """
+        send_email(admin_email, admin_subject, admin_body, is_html=True)
+
+        # 2. Acknowledge Customer
+        customer_subject = "Quote Request Received - OLIVER-UGWI"
+        customer_body = f"""
+        <h3>Hello {new_quote.name},</h3>
+        <p>We have received your request for a quote regarding <strong>{new_quote.service}</strong> from {new_quote.origin} to {new_quote.destination}.</p>
+        <p>Our team is currently calculating the estimates and will provide you with a detailed quote shortly.</p>
+        <br>
+        <p>Best regards,</p>
+        <p><strong>OLIVER-UGWI Team</strong></p>
+        """
+        send_email(new_quote.email, customer_subject, customer_body, is_html=True)
+
         return jsonify({"message": "Quote request submitted successfully", "quote": new_quote.to_dict()}), 201
     except Exception as e:
         db.session.rollback()

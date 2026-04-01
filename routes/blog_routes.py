@@ -8,6 +8,8 @@ from models.like import Like
 from models.user import User
 from models import db
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 
 blog_bp = Blueprint('blogs', __name__)
 
@@ -34,13 +36,16 @@ def upload_file():
         return jsonify({"msg": "No selected file"}), 400
     
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        # Add uuid to avoid filename collisions
-        unique_filename = f"{uuid.uuid4().hex}_{filename}"
-        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename))
-        
-        file_url = f"/uploads/{unique_filename}"
-        return jsonify({"msg": "File uploaded successfully", "url": file_url}), 201
+        try:
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file,
+                folder="blog_images"
+            )
+            file_url = upload_result.get("secure_url")
+            return jsonify({"msg": "File uploaded successfully", "url": file_url}), 201
+        except Exception as e:
+            return jsonify({"msg": f"Cloudinary upload failed: {str(e)}"}), 500
     
     return jsonify({"msg": "File type not allowed"}), 400
 
@@ -137,6 +142,14 @@ def delete_blog(id):
     if not blog:
         return jsonify({"msg": "Blog post not found"}), 404
         
+    # Delete from Cloudinary if applicable
+    if blog.image_url and 'cloudinary' in blog.image_url:
+        try:
+            public_id = blog.image_url.split('/')[-1].split('.')[0]
+            cloudinary.uploader.destroy(f"blog_images/{public_id}")
+        except:
+            pass
+
     db.session.delete(blog)
     db.session.commit()
     
