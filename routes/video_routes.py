@@ -8,6 +8,8 @@ from models import db
 from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
+import cloudinary.utils
+import time
 
 video_bp = Blueprint('videos', __name__)
 
@@ -62,7 +64,56 @@ def upload_video():
         except Exception as e:
             return jsonify({"msg": f"Cloudinary upload failed: {str(e)}"}), 500
     
-    return jsonify({"msg": "File type not allowed. Please upload mp4, webm, or ogg."}), 400
+    return jsonify({"msg": f"File type not allowed. Supported: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
+
+@video_bp.route('/signature', methods=['GET'])
+@jwt_required()
+def get_signature():
+    """Admin Only: Generate a Cloudinary signature for direct frontend upload"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({"msg": "Unauthorized. Admin access required."}), 403
+
+    timestamp = int(time.time())
+    params = {
+        "timestamp": timestamp,
+        "folder": "hero_videos"
+    }
+    
+    # Get configuration from environment variable CLOUDINARY_URL or direct config
+    config = cloudinary.config()
+    signature = cloudinary.utils.api_sign_request(params, config.api_secret)
+    
+    return jsonify({
+        "signature": signature,
+        "timestamp": timestamp,
+        "cloud_name": config.cloud_name,
+        "api_key": config.api_key,
+        "folder": "hero_videos"
+    }), 200
+
+@video_bp.route('/save', methods=['POST'])
+@jwt_required()
+def save_video_metadata():
+    """Admin Only: Save the URL and Public ID of a video uploaded directly by the frontend"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({"msg": "Unauthorized. Admin access required."}), 403
+
+    data = request.json
+    if not data or 'url' not in data or 'public_id' not in data:
+        return jsonify({"msg": "Missing required data (url, public_id)"}), 400
+
+    new_video = HeroVideo(
+        filename=data['public_id'],
+        url=data['url']
+    )
+    db.session.add(new_video)
+    db.session.commit()
+    
+    return jsonify({"msg": "Video metadata saved successfully", "video": new_video.to_dict()}), 201
 
 @video_bp.route('/<int:id>', methods=['DELETE'])
 @jwt_required()
