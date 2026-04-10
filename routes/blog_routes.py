@@ -91,17 +91,24 @@ def create_blog():
     if not data or not data.get('title') or not data.get('content'):
         return jsonify({"msg": "Title and content are required"}), 400
         
+    # Defensive check for author name
+    author_name = getattr(user, 'name', 'Admin') or 'Admin'
+        
     new_blog = Blog(
         title=data.get('title'),
         content=data.get('content'),
         excerpt=data.get('excerpt', data.get('content')[:150] + '...'),
         category=data.get('category', 'Uncategorized'),
-        author=user.name,
+        author=author_name,
         image_url=data.get('image_url')
     )
     
     db.session.add(new_blog)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Database error: {str(e)}"}), 500
     
     return jsonify({"msg": "Blog post created", "blog": new_blog.to_dict()}), 201
 
