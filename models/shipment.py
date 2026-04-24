@@ -5,10 +5,10 @@ import random
 from models.user import User
 
 def generate_tracking_id():
-    """Generate a unique tracking ID like OUG-123456"""
+    """Generate a unique tracking ID like OUGSL-123456"""
     chars = string.digits
     while True:
-        tracking_id = f"OUG-{''.join(random.choice(chars) for _ in range(6))}"
+        tracking_id = f"OUGSL-{''.join(random.choice(chars) for _ in range(6))}"
         # Check if exists
         from models.shipment import Shipment
         if not Shipment.query.filter_by(tracking_id=tracking_id).first():
@@ -25,7 +25,7 @@ class Shipment(db.Model):
     destination = db.Column(db.String(100), nullable=False)
     current_location = db.Column(db.String(100), nullable=True)
     
-    status = db.Column(db.String(50), default='Pending') # Pending, In Transit, Cleared, Delivered
+    status = db.Column(db.String(50), default='Pending') # Pending, In Transit, Arrived POD, Cleared, Delivered
     type = db.Column(db.String(50), nullable=False) # Maritime, Air Cargo, etc.
     estimated_deliveryDate = db.Column('estimated_delivery_date', db.DateTime, nullable=True)
     

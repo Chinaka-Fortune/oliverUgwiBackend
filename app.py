@@ -20,6 +20,7 @@ from flask_jwt_extended import JWTManager
 load_dotenv()
 
 from routes.communication_routes import comm_bp
+from routes.document_routes import document_bp
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -55,6 +56,7 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_bp, url_prefix='/api/admin', strict_slashes=False)
     app.register_blueprint(customer_bp, url_prefix='/api/customer', strict_slashes=False)
     app.register_blueprint(billing_bp, url_prefix='/api/billing', strict_slashes=False)
+    app.register_blueprint(document_bp, url_prefix='/api/documents', strict_slashes=False)
 
     with app.app_context():
         db.create_all()

@@ -62,6 +62,29 @@ def get_my_shipments():
         
     return jsonify({"shipments": [s.to_dict() for s in shipments]}), 200
 
+@shipment_bp.route('/<int:shipment_id>', methods=['PUT'])
+@jwt_required()
+def update_shipment(shipment_id):
+    """Admin only route to update shipment status and location"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user or user.role != 'admin':
+        return jsonify({"msg": "Unauthorized. Admin access required."}), 403
+        
+    shipment = Shipment.query.get(shipment_id)
+    if not shipment:
+        return jsonify({"msg": "Shipment not found"}), 404
+        
+    data = request.get_json()
+    if 'status' in data:
+        shipment.status = data['status']
+    if 'current_location' in data:
+        shipment.current_location = data['current_location']
+        
+    db.session.commit()
+    return jsonify({"msg": "Shipment updated successfully", "shipment": shipment.to_dict()}), 200
+
 @shipment_bp.route('/<int:shipment_id>', methods=['DELETE'])
 @jwt_required()
 def delete_shipment(shipment_id):

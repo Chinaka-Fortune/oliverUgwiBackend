@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Note: Ticket Messages table seems to be missing from the model files list but is likely used in logic.
+
 -- Let's add it based on typical support ticket patterns.
 CREATE TABLE IF NOT EXISTS ticket_messages (
     id SERIAL PRIMARY KEY,
@@ -166,3 +166,18 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
     is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 13. Documents Table
+CREATE TABLE IF NOT EXISTS documents (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    file_url VARCHAR(500) NOT NULL,
+    public_id VARCHAR(255),
+    file_type VARCHAR(50),
+    size VARCHAR(50),
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents(user_id);
+

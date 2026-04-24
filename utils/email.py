@@ -38,6 +38,9 @@ def send_email(to_email, subject, body, is_html=False):
         server.send_message(msg)
         server.quit()
         return True
+    except smtplib.SMTPException as e:
+        print(f"SMTP Error occurred when sending to {to_email}: {str(e)}")
+        return False
     except Exception as e:
-        print(f"Failed to send email to {to_email}: {e}")
+        print(f"Unexpected error when sending email to {to_email}: {str(e)}")
         return False
