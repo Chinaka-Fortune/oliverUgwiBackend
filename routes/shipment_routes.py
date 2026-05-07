@@ -38,7 +38,14 @@ def create_shipment():
         current_location=data.get('current_location', data.get('origin')),
         type=data.get('type'),
         status=data.get('status', 'Pending'),
-        revenue=data.get('revenue', 0.0)
+        revenue=data.get('revenue', 0.0),
+        bl_awb_no=data.get('bl_awb_no'),
+        consignment=data.get('consignment'),
+        vessel_airline=data.get('vessel_airline'),
+        pol=data.get('pol'),
+        ets=data.get('ets'),
+        pod=data.get('pod'),
+        eta=data.get('eta')
     )
     
     db.session.add(new_shipment)
@@ -81,6 +88,12 @@ def update_shipment(shipment_id):
         shipment.status = data['status']
     if 'current_location' in data:
         shipment.current_location = data['current_location']
+    
+    # Update new fields if provided
+    updateable_fields = ['bl_awb_no', 'consignment', 'vessel_airline', 'pol', 'ets', 'pod', 'eta']
+    for field in updateable_fields:
+        if field in data:
+            setattr(shipment, field, data[field])
         
     db.session.commit()
     return jsonify({"msg": "Shipment updated successfully", "shipment": shipment.to_dict()}), 200

@@ -32,6 +32,15 @@ class Shipment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     revenue = db.Column(db.Float, default=0.0)
+
+    # New Tracking Fields
+    bl_awb_no = db.Column(db.String(100), nullable=True)
+    consignment = db.Column(db.String(200), nullable=True)
+    vessel_airline = db.Column(db.String(100), nullable=True)
+    pol = db.Column(db.String(100), nullable=True)
+    ets = db.Column(db.String(100), nullable=True)
+    pod = db.Column(db.String(100), nullable=True)
+    eta = db.Column(db.String(100), nullable=True)
     
     user = db.relationship('User', backref=db.backref('shipments', lazy=True))
 
@@ -55,5 +64,12 @@ class Shipment(db.Model):
             'estimated_deliveryDate': self.estimated_deliveryDate.isoformat() if self.estimated_deliveryDate else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
-            'revenue': self.revenue
+            'revenue': self.revenue,
+            'bl_awb_no': self.bl_awb_no,
+            'consignment': self.consignment,
+            'vessel_airline': self.vessel_airline,
+            'pol': self.pol,
+            'ets': self.ets,
+            'pod': self.pod,
+            'eta': self.eta
         }

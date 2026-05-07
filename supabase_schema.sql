@@ -26,6 +26,13 @@ CREATE TABLE IF NOT EXISTS shipments (
     type VARCHAR(50) NOT NULL,
     estimated_delivery_date TIMESTAMP WITH TIME ZONE,
     revenue FLOAT DEFAULT 0.0,
+    bl_awb_no VARCHAR(100),
+    consignment VARCHAR(200),
+    vessel_airline VARCHAR(100),
+    pol VARCHAR(100),
+    ets VARCHAR(100),
+    pod VARCHAR(100),
+    eta VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
